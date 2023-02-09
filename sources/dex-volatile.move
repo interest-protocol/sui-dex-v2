@@ -228,7 +228,7 @@ module ipx::dex_volatile {
         let is_fee_on = mint_fee(pool, fee_to, ctx);
 
         // Make sure that both coins havea value greater than 0 to save gas for the user.
-        assert!(coin_x_value != 0 && coin_x_value != 0, ERROR_ADD_LIQUIDITY_ZERO_AMOUNT);
+        assert!(coin_x_value != 0 && coin_y_value != 0, ERROR_ADD_LIQUIDITY_ZERO_AMOUNT);
 
         // Save the reserves and supply amount of Pool<X, Y> locally.
         let (coin_x_reserve, coin_y_reserve, supply) = get_amounts(pool);
