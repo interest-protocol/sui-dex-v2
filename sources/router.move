@@ -569,7 +569,7 @@ public fun two_hop_swap<X, Y, B1, B2>(
     if (reserve_x == 0 && reserve_y == 0) return (desired_amount_x, desired_amount_y);
 
     let optimal_y_amount = utils::quote_liquidity(desired_amount_x, reserve_x, reserve_y);
-    if (desired_amount_y > optimal_y_amount) return (desired_amount_x, optimal_y_amount);
+    if (desired_amount_y >= optimal_y_amount) return (desired_amount_x, optimal_y_amount);
 
     let optimal_x_amount = utils::quote_liquidity(desired_amount_y, reserve_y, reserve_x);
     (optimal_x_amount, desired_amount_y)
