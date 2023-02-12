@@ -3,6 +3,7 @@ module ipx::dex_stable_tests {
 
     use sui::coin::{Self, mint_for_testing as mint, destroy_for_testing as burn};
     use sui::test_scenario::{Self as test, Scenario, next_tx, ctx};
+    use sui::object;
 
     use ipx::dex_stable::{Self as dex, Storage, AdminCap, SLPCoin};
     use ipx::test_utils::{people, scenario};
@@ -431,6 +432,52 @@ module ipx::dex_stable_tests {
     fun test_remove_liquidity_with_fee() {
         let scenario = scenario();
         test_remove_liquidity_with_fee_(&mut scenario);
+        test::end(scenario);
+    }
+
+        fun test_flash_loan_(test: &mut Scenario) {
+      test_create_pool_(test);
+
+      let (_, bob) = people();
+        
+      next_tx(test, bob);
+      {
+        let storage = test::take_shared<Storage>(test);
+
+        let (receipt, usdc, usdt) = dex::flash_loan<USDC, USDT>(&mut storage, INITIAL_USDC_VALUE / 2, INITIAL_USDT_VALUE / 3, ctx(test));
+
+        let pool = dex::borrow_pool<USDC, USDT>(&storage);
+
+        let (recipet_pool_id, repay_amount_x, repay_amount_y) = dex::get_receipt_data(&receipt);
+        let (fee, precision) = dex::get_flash_loan_fee_percent();
+
+        let amount_to_mint_x = (((INITIAL_USDC_VALUE / 2 as u256) * fee / precision) as u64);
+        let amount_to_mint_y = (((INITIAL_USDT_VALUE / 3 as u256) * fee / precision) as u64);
+
+        assert!(coin::value(&usdc) == INITIAL_USDC_VALUE / 2, 0);
+        assert!(coin::value(&usdt) == INITIAL_USDT_VALUE / 3, 0);
+        assert!(object::id(pool) == recipet_pool_id, 0);
+        assert!(repay_amount_x == INITIAL_USDC_VALUE / 2 + amount_to_mint_x, 0);
+        assert!(repay_amount_y == INITIAL_USDT_VALUE / 3 + amount_to_mint_y, 0);
+
+        coin::join(&mut usdc, mint<USDC>(amount_to_mint_x, ctx(test)));
+        coin::join(&mut usdt, mint<USDT>(amount_to_mint_y, ctx(test)));
+
+        dex::repay_flash_loan(
+          &mut storage,
+          receipt,
+          usdc,
+          usdt
+        );
+
+        test::return_shared(storage);
+      };
+    }
+
+    #[test]
+    fun test_flash_loan() {
+        let scenario = scenario();
+        test_flash_loan_(&mut scenario);
         test::end(scenario);
     }
 

@@ -6,6 +6,7 @@ module ipx::interface {
 
   use ipx::dex_volatile::{Self as volatile, Storage as VStorage, VLPCoin};
   use ipx::dex_stable::{Self as stable, Storage as SStorage, SLPCoin};
+  use ipx::ipx::{Self, IPXStorage, AccountStorage, IPX};
   use ipx::utils::{destroy_zero_or_transfer, handle_coin_vector, are_coins_sorted};
   use ipx::router;
 
@@ -335,5 +336,105 @@ module ipx::interface {
 
     transfer::transfer(coin_x, sender);
     transfer::transfer(coin_y, sender);
+  }
+
+/**
+* @notice It allows a user to deposit a Coin<T> in a farm to earn Coin<IPX>. 
+* @param storage The storage of the module ipx::ipx 
+* @param accounts_storage The account storage of the module ipx::ipx 
+* @param coin_vector A vector of Coin<T>
+* @param coin_value The value of Coin<T> the caller wishes to deposit  
+*/
+  entry public fun stake<T>(
+    storage: &mut IPXStorage,
+    accounts_storage: &mut AccountStorage,
+    coin_vector: vector<Coin<T>>,
+    coin_value: u64,
+    ctx: &mut TxContext
+  ) {
+    // Create a coin from the vector. It keeps the desired amound and sends any extra coins to the caller
+    // vector total value - coin desired value
+    let coin = handle_coin_vector(coin_vector, coin_value, ctx);
+
+    // Stake and send Coin<IPX> rewards to the caller.
+    transfer::transfer(
+      ipx::stake(
+        storage,
+        accounts_storage,
+        coin,
+        ctx
+      ),
+      tx_context::sender(ctx)
+    );
+  }
+
+/**
+* @notice It allows a user to withdraw an amount of Coin<T> from a farm. 
+* @param storage The storage of the module ipx::ipx 
+* @param accounts_storage The account storage of the module ipx::ipx 
+* @param coin_value The amount of Coin<T> the caller wishes to withdraw
+*/
+  entry public fun unstake<T>(
+    storage: &mut IPXStorage,
+    accounts_storage: &mut AccountStorage,
+    coin_value: u64,
+    ctx: &mut TxContext
+  ) {
+    let sender = tx_context::sender(ctx);
+    // Unstake yields Coin<IPX> rewards.
+    let (coin_ipx, coin) = ipx::unstake<T>(
+        storage,
+        accounts_storage,
+        coin_value,
+        ctx
+    );
+    transfer::transfer(coin_ipx, sender);
+    transfer::transfer(coin, sender);
+  }
+
+/**
+* @notice It allows a user to withdraw his/her rewards from a specific farm. 
+* @param storage The storage of the module ipx::ipx 
+* @param accounts_storage The account storage of the module ipx::ipx 
+*/
+  entry public fun get_rewards<T>(
+    storage: &mut IPXStorage,
+    accounts_storage: &mut AccountStorage,
+    ctx: &mut TxContext   
+  ) {
+    transfer::transfer(ipx::get_rewards<T>(storage, accounts_storage, ctx) ,tx_context::sender(ctx));
+  }
+
+/**
+* @notice It updates the Coin<T> farm rewards calculation.
+* @param storage The storage of the module ipx::ipx 
+*/
+  entry public fun update_pool<T>(storage: &mut IPXStorage, ctx: &mut TxContext) {
+    ipx::update_pool<T>(storage, ctx);
+  }
+
+/**
+* @notice It updates all pools.
+* @param storage The storage of the module ipx::ipx 
+*/
+  entry public fun update_all_pools(storage: &mut IPXStorage, ctx: &mut TxContext) {
+    ipx::update_all_pools(storage, ctx);
+  }
+
+/**
+* @notice It allows a user to burn Coin<IPX>.
+* @param storage The storage of the module ipx::ipx 
+* @param coin_vector A vector of Coin<IPX>
+* @param coin_value The value of Coin<IPX> the caller wishes to burn 
+*/
+  entry public fun burn_ipx(
+    storage: &mut IPXStorage,
+    coin_vector: vector<Coin<IPX>>,
+    coin_value: u64,
+    ctx: &mut TxContext
+  ) {
+    // Create a coin from the vector. It keeps the desired amound and sends any extra coins to the caller
+    // vector total value - coin desired value
+    ipx::burn_ipx(storage, handle_coin_vector(coin_vector, coin_value, ctx));
   }
 }

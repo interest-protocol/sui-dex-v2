@@ -41,9 +41,12 @@ The DEX supports two types of pools denoted as:
 - Create Pool: Users can only create volatile pools
 - One Hop Swap: Pool<BTC, Ether> & Pool<Ether, USDC> | BTC -> Ether -> USDC | USDC -> Ether -> BTC
 - Two Hop Swap: Pool<BTC, Ether> & Pool<Ether, USDC> & Pool<Sui, USDC> | BTC -> Ether -> USDC -> Sui | Sui -> USDC -> Ether -> BTC
+- Farms to deposit VLPCoins and SLPCoins to farm IPX tokens
+- Flash loans
 
 ### Future Features
 
+- TWAP Oracle
 - [Concentrated Liquidity](https://uniswap.org/whitepaper-v3.pdf)
 
 ## Live
